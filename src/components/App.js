@@ -34,15 +34,17 @@ function App() {
     const navigate = useHistory();
 
     useEffect(() => {
-        Promise.all([api.uploadUserInformation(), api.createInitialCards()])
-            .then(([userInformation, initialCards]) => {
-                setCurrentUser(userInformation);
-                setCards(initialCards);
-            })
-            .catch((err) => {
-                console.log(`Ошибка: ${err}`);
-            });
-    }, []);
+        if (isLoggedIn === true) {
+            Promise.all([api.uploadUserInformation(), api.createInitialCards()])
+                .then(([userInformation, initialCards]) => {
+                    setCurrentUser(userInformation);
+                    setCards(initialCards);
+                })
+                .catch((err) => {
+                    console.log(`Ошибка: ${err}`);
+                });
+        }
+    }, [isLoggedIn]);
 
     const handleUpdateUser = (data) => {
         setMessageLoading(true);
@@ -168,13 +170,13 @@ function App() {
         navigate.push('/sign-in');
     };
 
-    const processingAuthorization = (data) => {
+    const processingAuthorization = ({ email, password }) => {
         return auth
-            .loginAuthorize(data)
+            .loginAuthorize({ email, password })
             .then((data) => {
                 setIsLoggedIn(true);
                 localStorage.setItem('jwt', data.token);
-                tokenCheck();
+                setAuthorizationLogin(email);
                 navigate.push('/');
             })
             .catch((err) => {
@@ -183,7 +185,7 @@ function App() {
             });
     };
 
-    const tokenCheck = () => {
+    useEffect(() => {
         const jwt = localStorage.getItem('jwt');
         if (!jwt) {
             return;
@@ -193,14 +195,15 @@ function App() {
             .then((data) => {
                 setAuthorizationLogin(data.data.email);
                 setIsLoggedIn(true);
-                navigate.push('/');
             })
             .catch((err) => console.log(err));
-    };
+    }, []);
 
     useEffect(() => {
-        tokenCheck();
-    });
+        if (isLoggedIn === true) {
+            navigate.push("/");
+        }
+    }, [isLoggedIn, navigate]);
 
     useEffect(() => {
         if (isEditAvatarPopupOpen || isEditProfilePopupOpen || isAddPlacePopupOpen || selectedCard) {
